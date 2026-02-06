@@ -2,6 +2,9 @@
 
 A lightweight, dependency-free JavaScript library for building interactive node-based flow editors. Create visual workflows with drag-and-drop nodes, dynamic connections, reroute points, and a fully customizable theme system.
 
+![NodeForge](./assets/nodeforge.png)
+
+
 ## Features
 
 - **Drag & Drop Nodes** - Create and position nodes on an infinite canvas
