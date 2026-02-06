@@ -1,0 +1,51 @@
+{
+  "name": "nodeforge",
+  "version": "1.0.0",
+  "description": "NodeForge - Simple node-based flow library",
+  "type": "module",
+  "main": "dist/nodeforge.min.js",
+  "style": "dist/nodeforge.min.css",
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "rollup -c -w",
+    "build": "rollup -c",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Gnori/nodeforge.git"
+  },
+  "keywords": [
+    "nodeforge",
+    "flow",
+    "javascript",
+    "javascript-library",
+    "flow-based-programming",
+    "flowchart"
+  ],
+  "author": "JackyLim",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Gnori/nodeforge/issues"
+  },
+  "homepage": "https://github.com/Gnori/nodeforge#readme",
+  "dependencies": {
+    "core-js": "^3.36.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.6",
+    "@babel/preset-env": "^7.28.6",
+    "@rollup/plugin-babel": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "rollup": "^4.56.0",
+    "rollup-plugin-postcss": "^4.0.2",
+    "postcss": "^8.5.6",
+    "cssnano": "^7.1.2"
+  }
+}

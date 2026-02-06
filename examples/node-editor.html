@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NodeForge - Interactive Node Editor</title>
+
+  <!-- NodeForge CSS -->
+  <link rel="stylesheet" href="./dist/nodeforge.min.css">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      background: #f5f7fa;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ===================================
+       Sidebar - Node Palette
+       =================================== */
+    .sidebar {
+      width: 300px;
+      background: linear-gradient(180deg, #1e3a8a 0%, #1e293b 100%);
+      color: white;
+      padding: 24px;
+      overflow-y: auto;
+      box-shadow: 4px 0 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar h2 {
+      margin-bottom: 24px;
+      font-size: 20px;
+      font-weight: 600;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+      padding-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-box {
+      background: rgba(59, 130, 246, 0.1);
+      border-left: 4px solid #3b82f6;
+      padding: 16px;
+      margin-bottom: 24px;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .info-box.guide-btn {
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .info-box.guide-btn:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-left-color: #60a5fa;
+      transform: translateX(4px);
+    }
+
+    .info-box.guide-btn h3 {
+      margin-bottom: 0;
+    }
+
+    .guide-hint {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .info-box h3 {
+      margin-bottom: 12px;
+      color: #93c5fd;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* Guide Modal */
+    .guide-modal .modal-body {
+      color: #cbd5e1;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .guide-modal .guide-section {
+      margin-bottom: 24px;
+    }
+
+    .guide-modal .guide-section h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #60a5fa;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #334155;
+    }
+
+    .guide-modal .guide-section ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .guide-modal .guide-section li {
+      margin: 6px 0;
+      color: #475569;
+    }
+
+    .guide-modal .guide-key {
+      display: inline-block;
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: monospace;
+      border: 1px solid #334155;
+    }
+
+    body.dark .guide-modal .guide-section h3 {
+      border-bottom-color: #475569;
+    }
+
+    body.dark .guide-modal .guide-section li {
+      color: #cbd5e1;
+    }
+
+    body.dark .guide-modal .guide-key {
+      background: #0f172a;
+      border-color: #475569;
+    }
+
+    .node-palette {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .drag-node {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 16px;
+      cursor: grab;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .drag-node:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateX(8px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .drag-node:active {
+      cursor: grabbing;
+      transform: scale(0.98);
+    }
+
+    .drag-node-icon {
+      font-size: 28px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+    }
+
+    .drag-node-info {
+      flex: 1;
+    }
+
+    .drag-node-label {
+      font-size: 15px;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .drag-node-desc {
+      font-size: 12px;
+      color: #94a3b8;
+      display: block;
+    }
+
+    /* ===================================
+       Canvas Area
+       =================================== */
+    .canvas-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toolbar {
+      background: white;
+      padding: 16px 24px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .toolbar-brand {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-right: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toolbar button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #2563eb;
+      box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #059669;
+      box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+      box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+    }
+
+    .toolbar .spacer {
+      flex: 1;
+    }
+
+    .zoom-controls {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      background: #f8fafc;
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .zoom-controls button {
+      box-shadow: none;
+      padding: 8px 12px;
+      min-width: 38px;
+    }
+
+    #nodeforge-canvas {
+      flex: 1;
+      background: #ffffff;
+      position: relative;
+    }
+
+    /* ===================================
+       Custom Node Styles
+       =================================== */
+    .nodeforge .nodeforge-node {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      min-width: 220px;
+      overflow: visible;
+      transition: all 0.2s;
+      padding: 0;
+    }
+
+    .nodeforge .nodeforge-node:hover {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .nodeforge .nodeforge-node.selected {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2),
+                  0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .nodeforge .nodeforge-node .nodeforge_content_node {
+      overflow: hidden;
+      border-radius: 10px;
+    }
+
+    .node-header {
+      padding: 8px 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: white;
+      font-size: 13px;
+    }
+
+    .node-body {
+      padding: 10px 12px;
+      color: #1e293b;
+      background: white;
+    }
+
+    .node-body input,
+    .node-body select,
+    .node-body textarea {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      margin-top: 4px;
+      font-size: 12px;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .node-body input:focus,
+    .node-body select:focus,
+    .node-body textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .node-body label {
+      display: block;
+      margin-bottom: 2px;
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .node-body label:first-child {
+      margin-top: 0;
+    }
+
+    /* Node Type Colors */
+    .nodeforge-node.start .node-header {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    .nodeforge-node.process .node-header {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+    .nodeforge-node.decision .node-header {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    .nodeforge-node.end .node-header {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+    .nodeforge-node.data .node-header {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    }
+
+    .nodeforge-node.start { border-color: #10b981; }
+    .nodeforge-node.process { border-color: #3b82f6; }
+    .nodeforge-node.decision { border-color: #f59e0b; }
+    .nodeforge-node.end { border-color: #ef4444; }
+    .nodeforge-node.data { border-color: #8b5cf6; }
+
+    /* ===================================
+       Modal
+       =================================== */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      animation: fadeIn 0.2s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-content {
+      background: white;
+      margin: 8% auto;
+      padding: 32px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 700px;
+      max-height: 75vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.3s;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(30px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #f1f5f9;
+    }
+
+    .modal-header h2 {
+      font-size: 24px;
+      color: #1e293b;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .modal-close {
+      font-size: 32px;
+      cursor: pointer;
+      color: #94a3b8;
+      transition: all 0.2s;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+
+    .modal-close:hover {
+      color: #1e293b;
+      background: #f1f5f9;
+    }
+
+    .modal p {
+      margin-bottom: 16px;
+      color: #475569;
+      font-size: 14px;
+    }
+
+    pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.6;
+      font-family: 'Monaco', 'Courier New', monospace;
+      margin-bottom: 16px;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 16px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      resize: vertical;
+      min-height: 200px;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    /* ===================================
+       Dark Mode - Example UI
+       =================================== */
+    body.dark {
+      background: #0f172a;
+    }
+
+    body.dark .sidebar {
+      background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+      box-shadow: 4px 0 16px rgba(0, 0, 0, 0.4);
+    }
+
+    body.dark .sidebar h2 {
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    body.dark .info-box {
+      background: rgba(59, 130, 246, 0.05);
+      border-left-color: #1d4ed8;
+    }
+
+    body.dark .drag-node {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    body.dark .drag-node:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    body.dark .toolbar {
+      background: #1e293b;
+      border-bottom-color: #334155;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    body.dark .toolbar-brand {
+      color: #f1f5f9;
+    }
+
+    body.dark .btn-secondary {
+      background: #334155;
+      color: #cbd5e1;
+      border-color: #475569;
+    }
+
+    body.dark .btn-secondary:hover {
+      background: #475569;
+      border-color: #64748b;
+    }
+
+    body.dark .zoom-controls {
+      background: #1e293b;
+      border-color: #334155;
+    }
+
+    body.dark #nodeforge-canvas {
+      background: #0f172a;
+    }
+
+    /* Dark Mode - Custom Node Styles */
+    body.dark .nodeforge .nodeforge-node {
+      background: #1e293b;
+      border-color: #475569;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    body.dark .nodeforge .nodeforge-node:hover {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    body.dark .nodeforge .nodeforge-node.selected {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2),
+                  0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    body.dark .node-body {
+      background: #1e293b;
+      color: #f1f5f9;
+    }
+
+    body.dark .node-body input,
+    body.dark .node-body select,
+    body.dark .node-body textarea {
+      background: #0f172a;
+      border-color: #475569;
+      color: #f1f5f9;
+    }
+
+    body.dark .node-body input:focus,
+    body.dark .node-body select:focus,
+    body.dark .node-body textarea:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+    }
+
+    body.dark .node-body input::placeholder,
+    body.dark .node-body textarea::placeholder {
+      color: #64748b;
+    }
+
+    body.dark .node-body label {
+      color: #94a3b8;
+    }
+
+    body.dark .nodeforge-node.start { border-color: #059669; }
+    body.dark .nodeforge-node.process { border-color: #2563eb; }
+    body.dark .nodeforge-node.decision { border-color: #d97706; }
+    body.dark .nodeforge-node.end { border-color: #dc2626; }
+    body.dark .nodeforge-node.data { border-color: #7c3aed; }
+
+    /* Dark Mode - Modal */
+    body.dark .modal-content {
+      background: #1e293b;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    }
+
+    body.dark .modal-header {
+      border-bottom-color: #334155;
+    }
+
+    body.dark .modal-header h2 {
+      color: #f1f5f9;
+    }
+
+    body.dark .modal-close:hover {
+      color: #f1f5f9;
+      background: #334155;
+    }
+
+    body.dark .modal p {
+      color: #94a3b8;
+    }
+
+    body.dark pre {
+      background: #0f172a;
+      border: 1px solid #334155;
+    }
+
+    body.dark textarea {
+      background: #0f172a;
+      border-color: #475569;
+      color: #f1f5f9;
+    }
+
+    body.dark textarea:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+    }
+
+    body.dark kbd {
+      background: #0f172a;
+      border: 1px solid #334155;
+    }
+
+    body.dark .node-hint {
+      color: #94a3b8 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Sidebar with draggable nodes -->
+    <div class="sidebar">
+      <h2>
+        <span>🎨</span>
+        <span>Node Palette</span>
+      </h2>
+
+      <div class="info-box guide-btn" onclick="openGuide()">
+        <h3>💡 Quick Guide</h3>
+        <span class="guide-hint">Click to view details</span>
+      </div>
+
+      <div class="node-palette">
+        <div class="drag-node" draggable="true" data-node="start">
+          <span class="drag-node-icon">▶️</span>
+          <div class="drag-node-info">
+            <span class="drag-node-label">Start</span>
+            <span class="drag-node-desc">Entry point</span>
+          </div>
+        </div>
+
+        <div class="drag-node" draggable="true" data-node="process">
+          <span class="drag-node-icon">⚙️</span>
+          <div class="drag-node-info">
+            <span class="drag-node-label">Process</span>
+            <span class="drag-node-desc">Data transformation</span>
+          </div>
+        </div>
+
+        <div class="drag-node" draggable="true" data-node="decision">
+          <span class="drag-node-icon">❓</span>
+          <div class="drag-node-info">
+            <span class="drag-node-label">Decision</span>
+            <span class="drag-node-desc">Conditional logic</span>
+          </div>
+        </div>
+
+        <div class="drag-node" draggable="true" data-node="data">
+          <span class="drag-node-icon">💾</span>
+          <div class="drag-node-info">
+            <span class="drag-node-label">Data</span>
+            <span class="drag-node-desc">Store & retrieve</span>
+          </div>
+        </div>
+
+        <div class="drag-node" draggable="true" data-node="end">
+          <span class="drag-node-icon">🏁</span>
+          <div class="drag-node-info">
+            <span class="drag-node-label">End</span>
+            <span class="drag-node-desc">Exit point</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canvas Area -->
+    <div class="canvas-container">
+      <div class="toolbar">
+        <div class="toolbar-brand">
+          <span>⚡</span>
+          <span>NodeForge</span>
+        </div>
+
+        <button class="btn-success" onclick="exportData()" title="Export workflow">
+          💾 Export
+        </button>
+        <button class="btn-primary" onclick="importData()" title="Import workflow">
+          📥 Import
+        </button>
+        <button class="btn-danger" onclick="clearCanvas()" title="Clear canvas">
+          🗑️ Clear
+        </button>
+        <button class="btn-secondary" onclick="toggleMode()" title="Toggle edit/view mode">
+          <span id="mode-icon">🔓</span>
+          <span id="mode-text">Edit</span>
+        </button>
+        <button class="btn-secondary" onclick="toggleTheme()" title="Toggle light/dark theme">
+          <span id="theme-icon">🌙</span>
+          <span id="theme-text">Dark</span>
+        </button>
+
+        <div class="spacer"></div>
+
+        <div class="zoom-controls">
+          <button class="btn-secondary" onclick="editor.zoom_out()" title="Zoom out">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </button>
+          <button class="btn-secondary" onclick="editor.zoom_reset()" title="Fit to screen">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+          </button>
+          <button class="btn-secondary" onclick="editor.zoom_in()" title="Zoom in">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="nodeforge-canvas" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+    </div>
+  </div>
+
+  <!-- Export Modal -->
+  <div id="exportModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>
+          <span>📤</span>
+          <span>Export Workflow</span>
+        </h2>
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+      </div>
+      <p>Copy the JSON below to save your workflow:</p>
+      <pre id="exportData"></pre>
+      <button class="btn-primary" onclick="copyToClipboard()">
+        📋 Copy to Clipboard
+      </button>
+    </div>
+  </div>
+
+  <!-- Import Modal -->
+  <div id="importModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>
+          <span>📥</span>
+          <span>Import Workflow</span>
+        </h2>
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+      </div>
+      <p>Paste your JSON workflow data below:</p>
+      <textarea id="importData" placeholder='Paste JSON here...'></textarea>
+      <br><br>
+      <button class="btn-success" onclick="doImport()">
+        ✅ Import Workflow
+      </button>
+    </div>
+  </div>
+
+  <!-- Guide Modal -->
+  <div id="guideModal" class="modal">
+    <div class="modal-content guide-modal">
+      <div class="modal-header">
+        <h2>
+          <span>💡</span>
+          <span>Quick Guide</span>
+        </h2>
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+
+        <div class="guide-section">
+          <h3>🖱️ Node Operations</h3>
+          <ul>
+            <li><strong>Add node</strong> — Drag a node from the left palette and drop it onto the canvas</li>
+            <li><strong>Move node</strong> — Click and drag any node to reposition it</li>
+            <li><strong>Select node</strong> — Click a node to select it (blue highlight)</li>
+            <li><strong>Delete node</strong> — Select a node, then press <span class="guide-key">Delete</span> or <span class="guide-key">Cmd + Backspace</span></li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3>🔗 Connections</h3>
+          <ul>
+            <li><strong>Create connection</strong> — Drag from an output handle (right circle) to an input handle (left circle)</li>
+            <li><strong>Magnetic snap</strong> — When dragging near an input, the connection will auto-snap to the closest input</li>
+            <li><strong>Select connection</strong> — Click on a connection line to select it (green highlight)</li>
+            <li><strong>Delete connection</strong> — Select a connection, then press <span class="guide-key">Delete</span></li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3>📌 Reroute Points</h3>
+          <ul>
+            <li><strong>Add reroute point</strong> — Select a connection (click it), then double-click on the line</li>
+            <li><strong>Move reroute point</strong> — Drag the reroute point circle to bend the connection path</li>
+            <li><strong>Delete reroute point</strong> — Double-click directly on the reroute point circle</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3>🔍 Canvas Navigation</h3>
+          <ul>
+            <li><strong>Pan canvas</strong> — Click and drag on empty canvas area</li>
+            <li><strong>Zoom in / out</strong> — Use mouse scroll wheel or the zoom buttons in the toolbar</li>
+            <li><strong>Reset zoom</strong> — Click the fit button in the toolbar to reset to 100%</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3>⌨️ Keyboard Shortcuts</h3>
+          <ul>
+            <li><span class="guide-key">Delete</span> — Delete selected node or connection</li>
+            <li><span class="guide-key">Cmd</span> + <span class="guide-key">Backspace</span> — Delete selected node or connection (Mac)</li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h3>💾 Data</h3>
+          <ul>
+            <li><strong>Export</strong> — Save your workflow as JSON via the Export button</li>
+            <li><strong>Import</strong> — Restore a workflow from JSON via the Import button</li>
+            <li><strong>Clear</strong> — Remove all nodes and connections from the canvas</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- NodeForge Library -->
+  <script src="../dist/nodeforge.min.js"></script>
+
+  <script>
+    // Initialize NodeForge
+    const canvasElement = document.getElementById('nodeforge-canvas');
+    const editor = new NodeForge(canvasElement);
+
+    // Configure editor
+    editor.reroute = true;
+    editor.reroute_fix_curvature = true;
+    editor.force_first_input = false;
+
+    // Start editor
+    editor.start();
+
+    // Node templates
+    const nodeTemplates = {
+      start: {
+        inputs: 0,
+        outputs: 1,
+        html: `
+          <div class="node-header">
+            <span>▶️</span>
+            <span>Start</span>
+          </div>
+          <div class="node-body">
+            <label>Node Name</label>
+            <input type="text" df-name placeholder="Enter name" value="Start Node">
+          </div>
+        `,
+        data: { name: 'Start Node' }
+      },
+      process: {
+        inputs: 1,
+        outputs: 1,
+        html: `
+          <div class="node-header">
+            <span>⚙️</span>
+            <span>Process</span>
+          </div>
+          <div class="node-body">
+            <label>Process Name</label>
+            <input type="text" df-name placeholder="Process name" value="Process">
+            <label>Description</label>
+            <textarea df-description rows="2" placeholder="What does this process do?">Process data</textarea>
+          </div>
+        `,
+        data: { name: 'Process', description: 'Process data' }
+      },
+      decision: {
+        inputs: 1,
+        outputs: 2,
+        html: `
+          <div class="node-header">
+            <span>❓</span>
+            <span>Decision</span>
+          </div>
+          <div class="node-body">
+            <label>Condition</label>
+            <input type="text" df-condition placeholder="e.g., value > 10" value="">
+            <small class="node-hint" style="display: block; margin-top: 8px; color: #64748b; font-size: 12px;">
+              <strong>Output 1:</strong> True branch<br>
+              <strong>Output 2:</strong> False branch
+            </small>
+          </div>
+        `,
+        data: { condition: '' }
+      },
+      data: {
+        inputs: 1,
+        outputs: 1,
+        html: `
+          <div class="node-header">
+            <span>💾</span>
+            <span>Data</span>
+          </div>
+          <div class="node-body">
+            <label>Data Type</label>
+            <select df-datatype>
+              <option value="string">String</option>
+              <option value="number">Number</option>
+              <option value="boolean">Boolean</option>
+              <option value="object">Object</option>
+              <option value="array">Array</option>
+            </select>
+            <label>Value</label>
+            <input type="text" df-value placeholder="Enter value">
+          </div>
+        `,
+        data: { datatype: 'string', value: '' }
+      },
+      end: {
+        inputs: 1,
+        outputs: 0,
+        html: `
+          <div class="node-header">
+            <span>🏁</span>
+            <span>End</span>
+          </div>
+          <div class="node-body">
+            <label>Final Result</label>
+            <input type="text" df-result placeholder="Success, Error, etc." value="Success">
+          </div>
+        `,
+        data: { result: 'Success' }
+      }
+    };
+
+    // ===================================
+    // Drag & Drop Handlers
+    // ===================================
+    let draggedNodeType = null;
+
+    document.querySelectorAll('.drag-node').forEach(node => {
+      node.addEventListener('dragstart', function(e) {
+        draggedNodeType = this.getAttribute('data-node');
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+    });
+
+    function allowDrop(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+
+    function drop(e) {
+      e.preventDefault();
+
+      if (!draggedNodeType) return;
+
+      // Get mouse position relative to canvas
+      const rect = canvasElement.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      // Calculate position accounting for zoom and pan
+      const pos_x = (x - editor.canvas_x) / editor.zoom;
+      const pos_y = (y - editor.canvas_y) / editor.zoom;
+
+      // Get template
+      const template = nodeTemplates[draggedNodeType];
+
+      // Add node to canvas
+      editor.addNode(
+        draggedNodeType,
+        template.inputs,
+        template.outputs,
+        pos_x,
+        pos_y,
+        draggedNodeType,
+        template.data,
+        template.html
+      );
+
+      draggedNodeType = null;
+    }
+
+    // ===================================
+    // Toolbar Functions
+    // ===================================
+    function exportData() {
+      const data = editor.export();
+      document.getElementById('exportData').textContent = JSON.stringify(data, null, 2);
+      document.getElementById('exportModal').style.display = 'block';
+    }
+
+    function importData() {
+      document.getElementById('importData').value = '';
+      document.getElementById('importModal').style.display = 'block';
+    }
+
+    function doImport() {
+      try {
+        const data = JSON.parse(document.getElementById('importData').value);
+        editor.import(data);
+        closeModal();
+        showNotification('✅ Workflow imported successfully!', 'success');
+      } catch (e) {
+        showNotification('❌ Invalid JSON: ' + e.message, 'error');
+      }
+    }
+
+    function clearCanvas() {
+      if (confirm('⚠️ Are you sure you want to clear the entire canvas?\n\nThis action cannot be undone.')) {
+        editor.clearModuleSelected();
+        showNotification('🗑️ Canvas cleared', 'success');
+      }
+    }
+
+    function toggleMode() {
+      const icon = document.getElementById('mode-icon');
+      const text = document.getElementById('mode-text');
+
+      if (editor.editor_mode === 'edit') {
+        editor.editor_mode = 'fixed';
+        icon.textContent = '🔒';
+        text.textContent = 'View';
+        showNotification('🔒 View mode enabled', 'info');
+      } else {
+        editor.editor_mode = 'edit';
+        icon.textContent = '🔓';
+        text.textContent = 'Edit';
+        showNotification('🔓 Edit mode enabled', 'info');
+      }
+    }
+
+    function toggleTheme() {
+      const icon = document.getElementById('theme-icon');
+      const text = document.getElementById('theme-text');
+      const isDark = document.body.classList.toggle('dark');
+
+      // Toggle NodeForge canvas dark mode
+      const parentNodeforge = canvasElement.closest('.parent-nodeforge');
+      if (parentNodeforge) {
+        parentNodeforge.classList.toggle('dark', isDark);
+      }
+
+      if (isDark) {
+        icon.textContent = '☀️';
+        text.textContent = 'Light';
+        showNotification('🌙 Dark mode enabled', 'info');
+      } else {
+        icon.textContent = '🌙';
+        text.textContent = 'Dark';
+        showNotification('☀️ Light mode enabled', 'info');
+      }
+    }
+
+    function openGuide() {
+      document.getElementById('guideModal').style.display = 'block';
+    }
+
+    function closeModal() {
+      document.getElementById('exportModal').style.display = 'none';
+      document.getElementById('importModal').style.display = 'none';
+      document.getElementById('guideModal').style.display = 'none';
+    }
+
+    function copyToClipboard() {
+      const text = document.getElementById('exportData').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        showNotification('✅ Copied to clipboard!', 'success');
+      }).catch(() => {
+        showNotification('❌ Failed to copy', 'error');
+      });
+    }
+
+    // Simple notification system
+    function showNotification(message, type = 'info') {
+      const colors = {
+        success: '#10b981',
+        error: '#ef4444',
+        info: '#3b82f6'
+      };
+
+      const notification = document.createElement('div');
+      notification.textContent = message;
+      notification.style.cssText = `
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        background: ${colors[type]};
+        color: white;
+        padding: 16px 24px;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        z-index: 10000;
+        font-size: 14px;
+        font-weight: 500;
+        animation: slideInRight 0.3s, slideOutRight 0.3s 2.7s;
+      `;
+
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modals = ['exportModal', 'importModal', 'guideModal'];
+      modals.forEach(function(id) {
+        const modal = document.getElementById(id);
+        if (event.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+    }
+
+    // ===================================
+    // Event Listeners
+    // ===================================
+    editor.on('nodeCreated', function(id) {
+      console.log('✨ Node created:', id);
+    });
+
+    editor.on('nodeRemoved', function(id) {
+      console.log('🗑️ Node removed:', id);
+    });
+
+    editor.on('connectionCreated', function(connection) {
+      console.log('🔗 Connection created:', connection);
+    });
+
+    editor.on('connectionRemoved', function(connection) {
+      console.log('✂️ Connection removed:', connection);
+    });
+
+    editor.on('nodeSelected', function(id) {
+      console.log('👆 Node selected:', id);
+    });
+
+    // ===================================
+    // Load Example Workflow
+    // ===================================
+    setTimeout(() => {
+      // Create a sample workflow
+      editor.addNode('start', 0, 1, 100, 150, 'start',
+        { name: 'Start' },
+        nodeTemplates.start.html);
+
+      editor.addNode('process', 1, 1, 400, 150, 'process',
+        { name: 'Transform Data', description: 'Convert input to desired format' },
+        nodeTemplates.process.html);
+
+      editor.addNode('decision', 1, 2, 700, 150, 'decision',
+        { condition: 'isValid === true' },
+        nodeTemplates.decision.html);
+
+      editor.addNode('data', 1, 1, 1000, 80, 'data',
+        { datatype: 'object', value: '{ status: "success" }' },
+        nodeTemplates.data.html);
+
+      editor.addNode('end', 1, 0, 1000, 250, 'end',
+        { result: 'Error' },
+        nodeTemplates.end.html);
+
+      // Create connections
+      editor.addConnection(1, 2, 'output_1', 'input_1');
+      editor.addConnection(2, 3, 'output_1', 'input_1');
+      editor.addConnection(3, 4, 'output_1', 'input_1');
+      editor.addConnection(3, 5, 'output_2', 'input_1');
+
+      console.log('✅ Example workflow loaded');
+    }, 200);
+
+    // Add CSS for animations
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideInRight {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes slideOutRight {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+      }
+      kbd {
+        background: #1e293b;
+        color: #e2e8f0;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-family: monospace;
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>

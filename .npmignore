@@ -1,0 +1,24 @@
+# Source (users only need dist/)
+src/
+
+# Docs & Examples
+docs/
+examples/
+deploy/
+
+# Config files
+.babelrc
+rollup.config.js
+postcss.config.js
+
+# Git & Editor
+.gitignore
+.DS_Store
+.vscode/
+.idea/
+
+# Misc
+*.log
+coverage/
+tmp/
+temp/

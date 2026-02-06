@@ -1,0 +1,395 @@
+/* ===================================
+   NodeForge CSS Variables
+   =================================== */
+.parent-nodeforge {
+  /* Background & Layout */
+  --nf-background-color: transparent;
+
+  /* Node Colors */
+  --nf-node-bg: #ffffff;
+  --nf-node-bg-hover: #f8f9fa;
+  --nf-node-bg-selected: #e3f2fd;
+  --nf-node-border: #cbd5e1;
+  --nf-node-border-selected: #3b82f6;
+  --nf-node-border-radius: 8px;
+  --nf-node-color: #1e293b;
+  --nf-node-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --nf-node-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --nf-node-shadow-selected: 0 0 0 2px var(--nf-node-border-selected);
+
+  /* Handle (Input/Output) Colors */
+  --nf-handle-bg: #3b82f6;
+  --nf-handle-bg-hover: #2563eb;
+  --nf-handle-border: #ffffff;
+  --nf-handle-size: 16px;
+
+  /* Connection Colors */
+  --nf-edge-stroke: #94a3b8;
+  --nf-edge-stroke-hover: #3b82f6;
+  --nf-edge-stroke-selected: #10b981;
+  --nf-edge-width: 2px;
+  --nf-edge-width-hover: 3px;
+
+  /* Reroute Point Colors */
+  --nf-point-fill: #ffffff;
+  --nf-point-fill-hover: #3b82f6;
+  --nf-point-stroke: #64748b;
+
+  /* Delete Button */
+  --nf-delete-bg: #ef4444;
+  --nf-delete-bg-hover: #dc2626;
+  --nf-delete-color: #ffffff;
+
+  /* Selection */
+  --nf-selection-bg: rgba(59, 130, 246, 0.08);
+  --nf-selection-border: rgba(59, 130, 246, 0.5);
+}
+
+/* Dark Mode Theme */
+.parent-nodeforge.dark {
+  --nf-background-color: #0f172a;
+
+  --nf-node-bg: #1e293b;
+  --nf-node-bg-hover: #334155;
+  --nf-node-bg-selected: #1e3a5f;
+  --nf-node-border: #475569;
+  --nf-node-border-selected: #60a5fa;
+  --nf-node-color: #f1f5f9;
+  --nf-node-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --nf-node-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.5);
+
+  --nf-handle-bg: #60a5fa;
+  --nf-handle-bg-hover: #3b82f6;
+  --nf-handle-border: #1e293b;
+
+  --nf-edge-stroke: #475569;
+  --nf-edge-stroke-hover: #60a5fa;
+  --nf-edge-stroke-selected: #34d399;
+
+  --nf-point-fill: #334155;
+  --nf-point-fill-hover: #60a5fa;
+  --nf-point-stroke: #64748b;
+
+  --nf-delete-bg: #dc2626;
+  --nf-delete-bg-hover: #b91c1c;
+
+  --nf-selection-bg: rgba(96, 165, 250, 0.12);
+  --nf-selection-border: rgba(96, 165, 250, 0.4);
+}
+
+/* ===================================
+   Container & Canvas
+   =================================== */
+.parent-nodeforge {
+  display: flex;
+  overflow: hidden;
+  touch-action: none;
+  outline: none;
+  background-color: var(--nf-background-color);
+  position: relative;
+}
+
+.nodeforge {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  user-select: none;
+  perspective: 0;
+  cursor: grab;
+}
+
+.nodeforge.dragging {
+  cursor: grabbing;
+}
+
+.nodeforge .parent-node {
+  position: relative;
+}
+
+/* ===================================
+   Nodes
+   =================================== */
+.nodeforge .nodeforge-node {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  background: var(--nf-node-bg);
+  width: 160px;
+  min-height: 40px;
+  border-radius: var(--nf-node-border-radius);
+  border: 1px solid var(--nf-node-border);
+  color: var(--nf-node-color);
+  z-index: 2;
+  padding: 12px 16px;
+  box-shadow: var(--nf-node-shadow);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: grab;
+  box-sizing: border-box;
+}
+
+.nodeforge .nodeforge-node.dragging,
+.nodeforge .nodeforge-node.dragging:hover {
+  cursor: grabbing;
+  box-shadow: var(--nf-node-shadow-hover);
+  transition: none;
+  transform: none;
+}
+
+.nodeforge .nodeforge-node:hover {
+  background: var(--nf-node-bg-hover);
+  box-shadow: var(--nf-node-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.nodeforge .nodeforge-node.selected {
+  background: var(--nf-node-bg-selected);
+  border-color: var(--nf-node-border-selected);
+  box-shadow: var(--nf-node-shadow-selected);
+}
+
+.nodeforge .nodeforge-node:focus,
+.nodeforge .nodeforge-node:focus-visible {
+  outline: none;
+  box-shadow: var(--nf-node-shadow-selected);
+}
+
+/* Node Content */
+.nodeforge .nodeforge-node .inputs,
+.nodeforge .nodeforge-node .outputs {
+  width: 0px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nodeforge .nodeforge-node .nodeforge_content_node {
+  width: 100%;
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ===================================
+   Handles (Input/Output)
+   =================================== */
+.nodeforge .nodeforge-node .input,
+.nodeforge .nodeforge-node .output {
+  position: relative;
+  width: var(--nf-handle-size);
+  height: var(--nf-handle-size);
+  background: var(--nf-handle-bg);
+  border-radius: 50%;
+  border: 2px solid var(--nf-handle-border);
+  cursor: crosshair;
+  z-index: 3;
+  margin-bottom: 8px;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nodeforge .nodeforge-node .input:hover,
+.nodeforge .nodeforge-node .output:hover {
+  background: var(--nf-handle-bg-hover);
+  transform: scale(1.2);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+.nodeforge .nodeforge-node .input {
+  left: -9px;
+  top: 2px;
+}
+
+.nodeforge .nodeforge-node .input.snap-hover {
+  background: var(--nf-edge-stroke-selected);
+  transform: scale(1.6);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+}
+
+.nodeforge .nodeforge-node .output {
+  right: 7px;
+  top: 2px;
+}
+
+/* ===================================
+   SVG & Connections
+   =================================== */
+.nodeforge svg {
+  z-index: 0;
+  position: absolute;
+  overflow: visible !important;
+  pointer-events: none;
+}
+
+.nodeforge .connection {
+  position: absolute;
+  pointer-events: none;
+  aspect-ratio: 1 / 1;
+}
+
+.nodeforge .connection .main-path {
+  fill: none;
+  stroke-width: var(--nf-edge-width);
+  stroke: var(--nf-edge-stroke);
+  pointer-events: all;
+  transition: stroke 0.2s ease, stroke-width 0.2s ease;
+}
+
+.nodeforge .connection .main-path:hover {
+  stroke: var(--nf-edge-stroke-hover);
+  stroke-width: var(--nf-edge-width-hover);
+  cursor: pointer;
+}
+
+.nodeforge .connection .main-path.selected {
+  stroke: var(--nf-edge-stroke-selected);
+  stroke-width: var(--nf-edge-width-hover);
+  filter: drop-shadow(0 0 4px var(--nf-edge-stroke-selected));
+}
+
+/* Animated Connection (when drawing) */
+.nodeforge .connection.animated .main-path {
+  stroke-dasharray: 8;
+  animation: dashdraw 0.5s linear infinite;
+}
+
+@keyframes dashdraw {
+  from {
+    stroke-dashoffset: 16;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ===================================
+   Reroute Points
+   =================================== */
+.nodeforge .connection .point {
+  cursor: move;
+  stroke: var(--nf-point-stroke);
+  stroke-width: 2;
+  fill: var(--nf-point-fill);
+  pointer-events: all;
+  transition: fill 0.15s ease, stroke 0.15s ease, stroke-width 0.15s ease;
+}
+
+.nodeforge .connection .point:hover,
+.nodeforge .connection .point.selected {
+  fill: var(--nf-point-fill-hover);
+  stroke: var(--nf-edge-stroke-hover);
+  stroke-width: 3;
+  r: 8; /* Increase radius on hover */
+}
+
+/* Main path for standalone edges */
+.nodeforge .main-path {
+  fill: none;
+  stroke-width: var(--nf-edge-width);
+  stroke: var(--nf-edge-stroke);
+}
+
+/* ===================================
+   Delete Button
+   =================================== */
+.nodeforge-delete {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--nf-delete-bg);
+  color: var(--nf-delete-color);
+  z-index: 10;
+  border: 2px solid white;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 18px;
+  line-height: 1;
+  font-family: system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.nodeforge-delete:hover {
+  background: var(--nf-delete-bg-hover);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.nodeforge-delete:active {
+  transform: scale(0.95);
+}
+
+.nodeforge > .nodeforge-delete {
+  margin-left: -14px;
+  margin-top: 14px;
+}
+
+.parent-node .nodeforge-delete {
+  right: -14px;
+  top: -14px;
+}
+
+/* ===================================
+   Selection Box
+   =================================== */
+.nodeforge .selection-box {
+  position: absolute;
+  background: var(--nf-selection-bg);
+  border: 2px dashed var(--nf-selection-border);
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* ===================================
+   Utility Classes
+   =================================== */
+.nodeforge.readonly {
+  pointer-events: none;
+}
+
+.nodeforge.readonly .nodeforge-node {
+  cursor: default;
+}
+
+/* No interaction state */
+.nodeforge .nodeforge-node.inactive {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Loading state */
+.nodeforge .nodeforge-node.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.nodeforge .nodeforge-node.loading::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 2px solid var(--nf-node-border-selected);
+  border-radius: inherit;
+  border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error state */
+.nodeforge .nodeforge-node.error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.nodeforge.dark .nodeforge-node.error {
+  border-color: #dc2626;
+  background: #450a0a;
+}
